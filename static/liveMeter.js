@@ -7,6 +7,8 @@ var barGraphData=[0,0,0]//positive,neutral,negative
 var yLabels = {
     '-1': 'negative', '0' : 'neutral', '1' : 'positive'
 }
+var tableData
+var tableIds
 
 const createChart = function(){
 
@@ -35,17 +37,7 @@ const createChart = function(){
 		                    // 'junior-dev' will be returned instead and displayed on your chart
 		                }
 		            }
-	    //             "scaleLabel": {
-					//     "display": true,
-					//     "labelString": 'Category of Tweet'
-					// }
-		        }],
-				"xAxes":[{
-					"scaleLabel": {
-					    "display": true,
-					    "labelString": 'Last 10 tweets'
-					}
-				}]
+		        }]
 		    }
 		}
 	});
@@ -69,18 +61,7 @@ const createChart = function(){
 				"scales":{
 					"yAxes":[{
 						"ticks":{
-							"beginAtZero":true,
-							"stepSize": 1
-						},
-						"scaleLabel": {
-						    "display": true,
-						    "labelString": 'Count'
-						}
-					}],
-					"xAxes":[{
-						"scaleLabel": {
-						    "display": true,
-						    "labelString": 'Category of Tweet'
+							"beginAtZero":true
 						}
 					}]
 				}
@@ -89,12 +70,66 @@ const createChart = function(){
 
 }
 
+const initiateTable=function(){
+
+	var col=['Tweet Id','Tweet','Sentiment']
+	
+	//creating a dynamic table
+	var table=document.createElement("table");
+	table.setAttribute('id','mainTable')
+
+	//creating html table header row using sheaders
+	var header=table.createTHead();
+	var tr=header.insertRow(-1);
+	for(var i=0;i<col.length;i++){
+		var th=document.createElement("th");
+		th.innerHTML=col[i];
+		tr.appendChild(th);
+	}
+
+	//add json data to the table as rows
+	var tbody=document.createElement('tbody')
+	for(var i=0;i<tableIds.length;i++){
+		tr2=tbody.insertRow(-1);
+		for(var j=0;j<col.length;j++){
+			var tabCell=tr2.insertCell(-1);
+			if(j==0){
+				tabCell.innerHTML=tableIds[j];
+			}
+			else if(j==1){
+				tabCell.innerHTML=tableData[tableIds[i]]['text'];
+			}
+			else{
+				tabCell.innerHTML=tableData[tableIds[i]]['value'];
+			}
+
+		}
+	}
+	table.appendChild(tbody)
+	//adding the table to a div
+	var divContainer=document.getElementById("tweetsTable");
+	divContainer.innerHTML="";
+	divContainer.appendChild(table);
+
+	$('#mainTable').DataTable({
+		"lengthMenu":[10],
+		"aaSorting" : []
+	});
+
+	console.log('done')
+	
+	// makePi1()
+	// // makePi2()
+	// makeTimeChart()
+}
+
 
 const loadTweet = function(){
 	$.ajax({
 		url : '/liveTweetData',
 		method: "GET",
 		success: function(data){
+			console.log(data)
 			var id=Object.keys(data['data'])[0]
 			// console.log('id',id)
 			// console.log('lasttweet',lastTweet)
@@ -106,12 +141,12 @@ const loadTweet = function(){
 				console.log("new tweet")
 				lineGraphData.shift()
 
-				if(data['data'][id]=='positive'){
+				if(data['data'][id]['value']=='positive'){
 	    			lineGraphData.push(1)
 	    			barGraphData[0]+=1
 	    			lineColor="#77dd77"
 	    		}
-	    		else if(data['data'][id]=='negative'){
+	    		else if(data['data'][id]['value']=='negative'){
 	    			lineGraphData.push(-1)
 	    			barGraphData[2]+=1
 	    			lineColor="#ff6961"
@@ -131,6 +166,11 @@ const loadTweet = function(){
 			    });
 			    lineGraph.update();
 			    barGraph.update()
+
+			    tableData[id]=data['data'][id]
+			    tableIds.shift()
+			    tableIds.push(id)
+			    initiateTable()
 			}
 				
 		}
@@ -145,14 +185,15 @@ const loadData = function(){
     success: function(data){
     	console.log(data)
     	var ids=Object.keys(data['data'])
+    	tableIds=ids
     	// console.log(ids)
     	for(var i =0; i<ids.length;i++){
-    		if(data['data'][ids[i]]=='positive'){
+    		if(data['data'][ids[i]]['value']=='positive'){
     			lineGraphData.push(1)
     			barGraphData[0]+=1
     			lineColor="#77dd77"
     		}
-    		else if(data['data'][ids[i]]=='negative'){
+    		else if(data['data'][ids[i]]['value']=='negative'){
     			lineGraphData.push(-1)
     			barGraphData[2]+=1
     			lineColor="#ff6961"
@@ -166,6 +207,9 @@ const loadData = function(){
     	console.log(barGraphData)
     	lastTweet=ids[ids.length - 1]
     	createChart()
+    	
+    	tableData=data['data']
+    	initiateTable()
     	loadTweet()
     }
   })
