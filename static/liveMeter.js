@@ -112,6 +112,8 @@ const initiateTable=function(){
 	divContainer.appendChild(table);
 
 	$('#mainTable').DataTable({
+		"lengthChange": false,
+		"sDom": 'lrtip',
 		"lengthMenu":[10],
 		"aaSorting" : []
 	});
